@@ -10,6 +10,9 @@ from selfdrive.car.toyota_gen2.values import DBC, GEAR_MAP, DetectedEcus
 
 GearShifter = car.CarState.GearShifter
 
+CRUISE_SPEED_INCREMENT_MS = 1 * CV.MPH_TO_MS   # step size for RES_UP / SET_DOWN
+MIN_CRUISE_SPEED_MS = 10 * CV.MPH_TO_MS         # minimum settable cruise speed
+
 
 class CarState(CarStateBase):
   def __init__(self, CP):
@@ -76,14 +79,15 @@ class CarState(CarStateBase):
 
     # ── Speed ─────────────────────────────────────────────────────────────────
     # Use ocelot SPEED (0x76) when Pyboard is running, else native Prius 0x3CA.
+    # Both DBC signals are in km/h; convert once to m/s.
     if cp.can_valid:
-      vehicle_speed_kph = cp.vl["SPEED"]["CAN_SPEED"] * CV.KPH_TO_MS
+      vehicle_speed_ms = cp.vl["SPEED"]["CAN_SPEED"] * CV.KPH_TO_MS
     else:
-      vehicle_speed_kph = cp_body.vl["SPEED"]["SPEED"] * CV.KPH_TO_MS
+      vehicle_speed_ms = cp_body.vl["SPEED"]["SPEED"] * CV.KPH_TO_MS
 
     ret.wheelSpeeds = self.get_wheel_speeds(
-      vehicle_speed_kph, vehicle_speed_kph,
-      vehicle_speed_kph, vehicle_speed_kph,
+      vehicle_speed_ms, vehicle_speed_ms,
+      vehicle_speed_ms, vehicle_speed_ms,
     )
     ret.vEgoRaw = mean([ret.wheelSpeeds.fl, ret.wheelSpeeds.fr,
                         ret.wheelSpeeds.rl, ret.wheelSpeeds.rr])
@@ -151,10 +155,10 @@ class CarState(CarStateBase):
         if self.enabled:
           self.enabled_last = True
           if res_up and not self.prev_btn_states["RES_UP"]:
-            self.setSpeed += 1 * CV.MPH_TO_MS
+            self.setSpeed += CRUISE_SPEED_INCREMENT_MS
           if set_dn and not self.prev_btn_states["SET_DOWN"]:
-            if self.setSpeed >= 10 * CV.MPH_TO_MS:
-              self.setSpeed -= 1 * CV.MPH_TO_MS
+            if self.setSpeed >= MIN_CRUISE_SPEED_MS:
+              self.setSpeed -= CRUISE_SPEED_INCREMENT_MS
           if cancel and not self.prev_btn_states["CANCEL"]:
             self.enabled = False
         else:

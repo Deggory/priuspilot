@@ -88,7 +88,15 @@ class CarInterface(CarInterfaceBase):
       self.cp_cam.update_strings(can_strings)
 
     ret = self.CS.update(self.cp, self.cp_cam)
-    ret.canValid = self.cp_cam.can_valid if self.cp_cam is not None else self.cp.can_valid
+    # canValid: prefer ocelot parser when hardware is present (it is the control
+    # interface), otherwise fall back to the native Prius parser.
+    ocelot_active = any(DetectedEcus.values())
+    if ocelot_active:
+      ret.canValid = self.cp.can_valid
+    elif self.cp_cam is not None:
+      ret.canValid = self.cp_cam.can_valid
+    else:
+      ret.canValid = self.cp.can_valid
     ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
 
     events = self.create_common_events(ret)

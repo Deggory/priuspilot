@@ -3,8 +3,6 @@
 # Adapted from RetroPilot retropilot/ocelotcan.py
 # All messages are sent on CAN bus 0 (same bus as the Prius).
 
-MAX_TORQUE = 350.0  # interceptor torque range, must be ≤ 1000
-
 
 def create_steer_interceptor_command(packer, torque, enable, idx):
   """Steering torque command for the ocelot steering interceptor (0x300)."""

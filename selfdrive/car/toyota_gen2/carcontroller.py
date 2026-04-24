@@ -13,6 +13,16 @@ from selfdrive.car.toyota_gen2.ocelotcan import (
 )
 from selfdrive.car.toyota_gen2.values import DBC, DetectedEcus, SteerLimitParams
 
+# Speed at which steer scaling reaches zero (m/s). Above this value the
+# interceptor receives no torque command.  ~200 mph is intentionally high
+# so scaling acts as a gentle ramp rather than a hard cutoff.
+_STEER_SCALE_SPEED_MS = 90.0
+
+# Minimum raw gas value (0-1000 range from actuator sensor) below which
+# simultaneous braking is still allowed.  Above this threshold the driver
+# is clearly pressing the accelerator so brake commands are suppressed.
+_GAS_OVERRIDE_THRESHOLD = 450
+
 
 class CarController():
   def __init__(self, dbc_name, CP, VM):
@@ -33,7 +43,7 @@ class CarController():
     # ── Steering ──────────────────────────────────────────────────────────────
     # Torque scales inversely with speed so the car doesn't oversteer at
     # highway speeds while still having enough authority at low speed.
-    steer_lim = SteerLimitParams.STEER_MAX * max(0.0, 1.0 - (CS.out.vEgo / 90))
+    steer_lim = SteerLimitParams.STEER_MAX * max(0.0, 1.0 - (CS.out.vEgo / _STEER_SCALE_SPEED_MS))
     new_steer = int(round(actuators.steer * steer_lim))
     apply_steer = apply_toyota_steer_torque_limits(
       new_steer, self.last_steer, CS.out.steeringTorqueEps, SteerLimitParams
@@ -53,7 +63,7 @@ class CarController():
       if actuators.accel < 0:
         apply_brake = clip(-actuators.accel, 0.0, 1.0)
     # Don't brake while driver is on the gas
-    if CS.out.gas > 450:
+    if CS.out.gas > _GAS_OVERRIDE_THRESHOLD:
       apply_brake = 0.0
 
     # ── 50 Hz messages ────────────────────────────────────────────────────────
