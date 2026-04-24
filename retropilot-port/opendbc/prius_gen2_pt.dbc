@@ -1,0 +1,153 @@
+CM_ "Prius Gen 2 (NHW20, 2004-2009) Powertrain CAN bus";
+CM_ "PriusPilot project — Phase 1 (read-only, no controls)";
+CM_ "CAN bus speed: 500 kbit/s";
+CM_ "Sources: Atilla Vass, usbseawolf2000, direct bus captures";
+
+VERSION ""
+
+NS_ :
+
+BS_:
+
+BU_: XXX HCU ECM BCM
+
+CM_ "Imported file _comma.dbc starts here";
+BO_ 512 GAS_COMMAND: 6 EON
+ SG_ GAS_COMMAND : 7|16@0+ (0.159375,-75.555) [0|1] "" INTERCEPTOR
+ SG_ GAS_COMMAND2 : 23|16@0+ (0.159375,-151.111) [0|1] "" INTERCEPTOR
+ SG_ ENABLE : 39|1@0+ (1,0) [0|1] "" INTERCEPTOR
+ SG_ COUNTER_PEDAL : 35|4@0+ (1,0) [0|15] "" INTERCEPTOR
+ SG_ CHECKSUM_PEDAL : 47|8@0+ (1,0) [0|255] "" INTERCEPTOR
+
+BO_ 513 GAS_SENSOR: 6 INTERCEPTOR
+ SG_ INTERCEPTOR_GAS : 7|16@0+ (1,0) [0|1] "" EON
+ SG_ INTERCEPTOR_GAS2 : 23|16@0+ (1,0) [0|1] "" EON
+ SG_ STATE : 39|4@0+ (1,0) [0|15] "" EON
+ SG_ COUNTER_PEDAL : 35|4@0+ (1,0) [0|15] "" EON
+ SG_ CHECKSUM_PEDAL : 47|8@0+ (1,0) [0|255] "" EON
+
+VAL_ 513 STATE 5 "FAULT_TIMEOUT" 4 "FAULT_STARTUP" 3 "FAULT_SCE" 2 "FAULT_SEND" 1 "FAULT_BAD_CHECKSUM" 0 "NO_FAULT" ;
+
+CM_ "Gen 2 specific messages start here";
+
+CM_ "0x0022 — Lateral acceleration, 13ms period (~77Hz)";
+CM_ "Eq: (256*A+B) - 0x0200, uncalibrated";
+BO_ 34 LATERAL_ACCEL: 8 XXX
+ SG_ LATERAL_ACCEL : 7|16@0- (1,0) [-512|511] "" XXX
+
+CM_ "0x0023 — Longitudinal acceleration, 13ms period (~77Hz)";
+CM_ "Eq: (256*A+B) - 0x0200, uncalibrated";
+BO_ 35 LONGITUDINAL_ACCEL: 8 XXX
+ SG_ LONGITUDINAL_ACCEL : 7|16@0- (1,0) [-512|511] "" XXX
+
+CM_ "0x0025 — Steering angle sensor, 13ms period (~77Hz)";
+CM_ "Standard Toyota STEER_ANGLE_SENSOR — same format as Gen 3";
+CM_ "12-bit signed, factor 1.5 deg, straight-ahead is vehicle specific";
+BO_ 37 STEER_ANGLE_SENSOR: 8 XXX
+ SG_ STEER_ANGLE : 3|12@0- (1.5,0) [-500|500] "deg" XXX
+ SG_ STEER_FRACTION : 39|4@0- (0.1,0) [-0.7|0.7] "deg" XXX
+ SG_ STEER_RATE : 35|12@0- (1,0) [-2000|2000] "deg/s" XXX
+
+CM_ "0x0030 — Brake pedal position, 6ms period (~167Hz)";
+CM_ "Byte E (index 4): position 0-127, may read 0x7F when not pressed on startup";
+BO_ 48 BRAKE_MODULE: 8 XXX
+ SG_ BRAKE_POSITION : 39|8@0+ (1,0) [0|127] "" XXX
+
+CM_ "0x0038 — ICE RPM (coarse), ~40ms period";
+CM_ "Byte B (index 1): 0 = ICE off, >0 = running. NOT accurate RPM.";
+BO_ 56 ENGINE_RPM: 8 XXX
+ SG_ RPM_COARSE : 15|8@0+ (64,0) [0|7552] "rpm" XXX
+ SG_ ICE_RUNNING : 15|8@0+ (1,0) [0|1] "" XXX
+
+CM_ "0x0039 — ICE coolant temperature, ~88ms period";
+CM_ "Byte A (index 0): direct temperature in Celsius, no offset";
+BO_ 57 ICE_COOLANT_TEMP: 8 XXX
+ SG_ COOLANT_TEMP : 7|8@0+ (1,0) [0|255] "degC" XXX
+
+CM_ "0x003B — Electric motor amp/volt, 8ms period";
+CM_ "Bytes A-B: (256*A+B)/10 amps (12-bit signed)";
+CM_ "Byte D: HV battery voltage (0-255V, nominal 201V)";
+BO_ 59 EM_POWER: 8 XXX
+ SG_ EM_CURRENT : 7|16@0- (0.1,0) [-200|200] "A" XXX
+ SG_ HV_VOLTAGE : 31|8@0+ (1,0) [0|255] "V" XXX
+
+CM_ "0x0081 — Front wheel pulses, 13ms period";
+CM_ "185 pulses per revolution";
+BO_ 129 WHEEL_PULSES_FRONT: 8 XXX
+ SG_ FRONT_RIGHT_PULSES : 7|16@0+ (1,0) [0|65535] "" XXX
+ SG_ FRONT_LEFT_PULSES : 23|16@0+ (1,0) [0|65535] "" XXX
+
+CM_ "0x0083 — Rear wheel pulses, 13ms period";
+BO_ 131 WHEEL_PULSES_REAR: 8 XXX
+ SG_ REAR_RIGHT_PULSES : 7|16@0+ (1,0) [0|65535] "" XXX
+ SG_ REAR_LEFT_PULSES : 23|16@0+ (1,0) [0|65535] "" XXX
+
+CM_ "0x0120 — Drive mode / gear selector, 17ms period (~59Hz)";
+CM_ "Byte D (index 3), bits 0-1: P=0, R=1, N=2, D=3";
+BO_ 288 GEAR_PACKET: 8 XXX
+ SG_ GEAR : 25|2@0+ (1,0) [0|3] "" XXX
+
+VAL_ 288 GEAR 0 "P" 1 "R" 2 "N" 3 "D" ;
+
+CM_ "0x0244 — Throttle pedal position, 25ms period (~40Hz)";
+CM_ "Byte G (index 6): raw position 0-0xC8 (0-200)";
+BO_ 580 GAS_PEDAL_HYBRID: 8 XXX
+ SG_ GAS_PEDAL : 55|8@0+ (1,0) [0|200] "" XXX
+
+CM_ "0x03C8 — ICE target speed, 70ms period";
+CM_ "Bytes C-D: (256*C+D), 0-65535 RPM";
+BO_ 968 ICE_SPEED_TARGET: 8 XXX
+ SG_ ICE_TARGET_RPM : 23|16@0+ (1,0) [0|65535] "rpm" XXX
+
+CM_ "0x03CA — Vehicle speed, 108ms period (~9Hz)";
+CM_ "Byte C (index 2): speed in km/h, range 0-255";
+BO_ 970 SPEED: 8 XXX
+ SG_ SPEED : 23|8@0+ (1,0) [0|255] "km/h" XXX
+
+CM_ "0x03CB — HV battery state, 108ms period";
+CM_ "Bytes C-D: (256*C+D)/2 = SOC% (MFD shows 40-80% range)";
+CM_ "Byte A: max discharge current (0-255A, nominal 100A)";
+CM_ "Byte B: max charge current (0-255A, nominal 105A)";
+BO_ 971 HV_BATTERY_STATE: 8 XXX
+ SG_ HV_SOC : 23|16@0+ (0.5,0) [0|100] "%" XXX
+ SG_ MAX_DISCHARGE_CURRENT : 7|8@0+ (1,0) [0|255] "A" XXX
+ SG_ MAX_CHARGE_CURRENT : 15|8@0+ (1,0) [0|255] "A" XXX
+
+CM_ "0x0529 — Event messages (triangle, EV mode, SOC bars), 1000ms";
+BO_ 1321 EVENTS: 8 XXX
+ SG_ ANY_EVENT : 7|1@0+ (1,0) [0|1] "" XXX
+ SG_ GENERAL_PROBLEM : 18|1@0+ (1,0) [0|1] "" XXX
+ SG_ NOT_IN_PARK : 11|1@0+ (1,0) [0|1] "" XXX
+ SG_ SOC_BARS : 32|3@1+ (1,0) [0|8] "" XXX
+ SG_ EV_MODE_ACTIVE : 38|1@0+ (1,0) [0|1] "" XXX
+
+CM_ "0x052C — ICE temperature (alternate), ~1050ms period";
+CM_ "Byte B (index 1): temp/2, range 0-127 degC";
+BO_ 1324 ICE_TEMP_ALT: 8 XXX
+ SG_ ICE_TEMP : 15|8@0+ (0.5,0) [0|127] "degC" XXX
+
+CM_ "0x057F — Headlights status, ~1050ms period";
+CM_ "Byte B (index 1), bits 3-5: Off=0x00, Parkers=0x10, Low=0x30, High=0x38";
+BO_ 1407 HEADLIGHTS: 8 XXX
+ SG_ HEADLIGHT_STATE : 11|3@0+ (1,0) [0|7] "" XXX
+
+CM_ "0x05A4 — Fuel tank level, ~3400ms period";
+CM_ "Byte B (index 1): raw level 0-0x20 (~44L tank)";
+BO_ 1444 FUEL_LEVEL: 8 XXX
+ SG_ FUEL_LEVEL : 15|8@0+ (1,0) [0|32] "" XXX
+
+CM_ "0x05B6 — Doors/hatch status, ~1050ms period";
+CM_ "Byte C (index 2), bits 6-7: Closed=0x00, Driver=0x80, Others=0x40";
+BO_ 1462 DOORS_STATUS: 8 XXX
+ SG_ DOOR_OPEN : 23|2@0+ (1,0) [0|3] "" XXX
+
+CM_ "0x05C8 — Cruise control active, ~1050ms period";
+CM_ "Byte C (index 2), bit 4";
+BO_ 1480 CRUISE_CONTROL: 8 XXX
+ SG_ CRUISE_ACTIVE : 20|1@0+ (1,0) [0|1] "" XXX
+
+CM_ "0x05CC — Outside/ambient temperature, ~350ms period";
+CM_ "Byte A (index 0): temp + 40 offset. Value 36 = -4 degC";
+BO_ 1484 OUTSIDE_TEMP: 8 XXX
+ SG_ OUTSIDE_TEMP : 7|8@0+ (1,-40) [-40|215] "degC" XXX
+
