@@ -116,7 +116,7 @@ class CarState(CarStateBase):
       ("STEER_ANGLE_SENSOR", 77),
       ("SPEED",              9),
       ("GEAR_PACKET",        59),
-      ("BRAKE_MODULE",       40),   # relaxed from 167 Hz
+      ("BRAKE_MODULE",       40),   # transmits at ~167 Hz; relaxed to 40 Hz — CANParser uses a lower-bound tolerance
       ("GAS_PEDAL_HYBRID",   40),
 
       # Non-critical — freq 0 so missing messages don't invalidate CAN

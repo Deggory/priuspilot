@@ -6,6 +6,7 @@ from selfdrive.car.toyota_gen2.values import DBC
 
 class CarController():
   def __init__(self, dbc_name, CP, VM):
+    # CP and VM are required by the CarController interface contract but unused in Phase 1
     self.packer = CANPacker(dbc_name)
     self.steer_rate_limited = False
 
